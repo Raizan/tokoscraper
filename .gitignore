@@ -1,2 +1,5 @@
 node_modules
 .vscode
+todo
+.eslintrc.json
+dictionary.txt
