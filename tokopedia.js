@@ -24,15 +24,12 @@ const url = `https://www.tokopedia.com/search?st=product&q=${searchKeyword}`;
     });
 
     const $ = cheerio.load(pageContent);
-    const productNames = $('h3._18f-69Qp');
-    const productPrice = $('span._3PlXink_');
+    const productGrid = $('._33JN2R1i');
 
-    productNames.each((i, elem) => {
-      table.push([i + 1, elem.children[0].data]);
-    });
-
-    productPrice.each((i, elem) => {
-      table[i].push(elem.children[0].children[0].data);
+    productGrid.each((i, col) => {
+      const productName = $('._18f-69Qp', col)[0].children[0].data;
+      const productPrice = $('._3PlXink_', col)[0].children[0].children[0].data;
+      table.push([i + 1, productName, productPrice]);
     });
 
     console.log(table.toString());
