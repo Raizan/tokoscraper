@@ -15,11 +15,10 @@ let url = `https://www.tokopedia.com/search?st=product&q=${argv.keyword}`;
 if (argv.p !== undefined) {
   url = `${url}&page=${argv.p}`;
 }
-
+console.time('scrape time');
 (async () => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: vars.browserWSEndpoint,
-    defaultViewport: { width: 1920, height: 926 },
   });
   const page = await browser.newPage();
   try {
@@ -30,6 +29,8 @@ if (argv.p !== undefined) {
       pageUrl = `${pageUrl}?page=`;
       await page.goto(pageUrl);
     }
+
+    await page.setViewport({ width: 1200, height: 800 });
 
     await autoScroll(page);
 
@@ -61,18 +62,22 @@ if (argv.p !== undefined) {
 
       table.push([i + 1, productName, productPrice]);
     });
+
     console.log(table.toString());
   } catch (err) {
     console.log(err);
   }
   await browser.close();
+  console.timeEnd('scrape time');
 })();
 
+// Credit to chenxiaochun
+// https://github.com/chenxiaochun/blog/issues/38
 async function autoScroll(page) {
   await page.evaluate(async () => {
     await new Promise((resolve, reject) => {
       let totalHeight = 0;
-      const distance = 100;
+      const distance = 800;
       const timer = setInterval(() => {
         const scrollHeight = document.body.scrollHeight;
         window.scrollBy(0, distance);
