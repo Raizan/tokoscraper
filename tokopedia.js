@@ -1,21 +1,38 @@
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
-const readline = require('readline-sync');
 const Table = require('cli-table');
+const argv = require('minimist')(process.argv.slice(2));
+const vars = require('./vars.json');
 
-const searchKeyword = readline.question('Keyword: ').split(' ').join('+');
 
-const url = `https://www.tokopedia.com/search?st=product&q=${searchKeyword}`;
+if (argv.keyword === undefined) {
+  console.log('Usage: node tokopedia.js <keyword> [-p page]');
+  process.exit(-1);
+}
 
+let url = `https://www.tokopedia.com/search?st=product&q=${argv.keyword}`;
+
+if (argv.p !== undefined) {
+  url = `${url}&page=${argv.p}`;
+}
 
 (async () => {
   const browser = await puppeteer.connect({
-    browserWSEndpoint: 'ws://localhost:3000',
+    browserWSEndpoint: vars.browserWSEndpoint,
     defaultViewport: { width: 1920, height: 926 },
   });
   const page = await browser.newPage();
   try {
     await page.goto(url);
+
+    let pageUrl = page.url();
+    if (pageUrl.indexOf('/p/') !== -1) {
+      pageUrl = `${pageUrl}?page=`;
+      await page.goto(pageUrl);
+    }
+
+    await autoScroll(page);
+
     const pageContent = await page.content();
 
     const table = new Table({
@@ -23,18 +40,49 @@ const url = `https://www.tokopedia.com/search?st=product&q=${searchKeyword}`;
       colWidths: [5, 70, 20],
     });
 
-    const $ = cheerio.load(pageContent);
-    const productGrid = $('._33JN2R1i');
 
+    const $ = cheerio.load(pageContent);
+    const productGrid = $(vars.tp.grid);
     productGrid.each((i, col) => {
-      const productName = $('._18f-69Qp', col)[0].children[0].data;
-      const productPrice = $('._3PlXink_', col)[0].children[0].children[0].data;
+      const productName = $(vars.tp.productName, col).text();
+      const productPrice = $(vars.tp.productPrice, col).children().text();
+      const productLink = $('a', col).attr('href');
+      const productImage = $('img', col).attr('src');
+      const shopName = $(vars.tp.shopName, col).text();
+      const shopLocation = $(vars.tp.shopLocation, col).text();
+      const reviewCount = $(vars.tp.reviewCount, col).text().slice(1, -1);
+
+      let reviewStars;
+      // console.log($(vars.tp.review5, col).attribs);
+      // if ($(vars.tp.review5, col).length === 1) {
+      //   reviewStars = 5;
+      //   console.log('5 stars');
+      // }
+
       table.push([i + 1, productName, productPrice]);
     });
-
     console.log(table.toString());
   } catch (err) {
     console.log(err);
   }
   await browser.close();
 })();
+
+async function autoScroll(page) {
+  await page.evaluate(async () => {
+    await new Promise((resolve, reject) => {
+      let totalHeight = 0;
+      const distance = 100;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+
+        if (totalHeight >= scrollHeight) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 100);
+    });
+  });
+}
