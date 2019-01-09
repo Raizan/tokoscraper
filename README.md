@@ -1,2 +1,2 @@
-# tokoscrapper
-Indonesia e-Commerce Sites Product Scrapper
+# tokoscraper
+Indonesia e-Commerce Sites Product Scraper
