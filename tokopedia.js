@@ -1,20 +1,18 @@
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
-const Table = require('cli-table');
 const argv = require('minimist')(process.argv.slice(2));
 const vars = require('./vars.json');
 
 
 if (argv.keyword === undefined) {
-  console.log('Usage: node tokopedia.js <keyword> [-p page]');
+  console.log('Usage: node tokopedia.js --keyword <keyword> [-p page] [--sc filter] [--ob sort by]');
   process.exit(-1);
 }
 
 let url = `https://www.tokopedia.com/search?st=product&q=${argv.keyword}`;
 
-if (argv.p !== undefined) {
-  url = `${url}&page=${argv.p}`;
-}
+url = formatUrl(url);
+
 console.time('scrape time');
 (async () => {
   const browser = await puppeteer.connect({
@@ -24,10 +22,10 @@ console.time('scrape time');
   try {
     await page.goto(url);
 
-    let pageUrl = page.url();
-    if (pageUrl.indexOf('/p/') !== -1) {
-      pageUrl = `${pageUrl}?page=`;
-      await page.goto(pageUrl);
+    url = page.url();
+    if (url.indexOf('/p/') !== -1) {
+      const newUrl = formatUrl(url);
+      await page.goto(newUrl);
     }
 
     await page.setViewport({ width: 1200, height: 800 });
@@ -36,34 +34,53 @@ console.time('scrape time');
 
     const pageContent = await page.content();
 
-    const table = new Table({
-      head: ['#', 'Product Name', 'Price'],
-      colWidths: [5, 70, 20],
-    });
-
-
+    const jsonObj = [];
     const $ = cheerio.load(pageContent);
     const productGrid = $(vars.tp.grid);
     productGrid.each((i, col) => {
       const productName = $(vars.tp.productName, col).text();
-      const productPrice = $(vars.tp.productPrice, col).children().text();
+
+      let productPrice = $(vars.tp.productPrice, col).children().text();
+      productPrice = unformatMoney(productPrice);
+
       const productLink = $('a', col).attr('href');
       const productImage = $('img', col).attr('src');
       const shopName = $(vars.tp.shopName, col).text();
       const shopLocation = $(vars.tp.shopLocation, col).text();
-      const reviewCount = $(vars.tp.reviewCount, col).text().slice(1, -1);
+
+      let reviewCount = $(vars.tp.reviewCount, col).text().slice(1, -1);
+      reviewCount = Number(reviewCount);
 
       let reviewStars;
-      // console.log($(vars.tp.review5, col).attribs);
-      // if ($(vars.tp.review5, col).length === 1) {
-      //   reviewStars = 5;
-      //   console.log('5 stars');
-      // }
+      if ($('i', col).is(vars.tp.review5)) {
+        reviewStars = 5;
+      } else if ($('i', col).is(vars.tp.review4)) {
+        reviewStars = 4;
+      } else if ($('i', col).is(vars.tp.review3)) {
+        reviewStars = 3;
+      } else if ($('i', col).is(vars.tp.review2)) {
+        reviewStars = 2;
+      } else if ($('i', col).is(vars.tp.review1)) {
+        reviewStars = 1;
+      } else {
+        reviewStars = null;
+      }
 
-      table.push([i + 1, productName, productPrice]);
+      const colData = {
+        productName,
+        productPrice,
+        productLink,
+        productImage,
+        shopName,
+        shopLocation,
+        reviewCount,
+        reviewStars,
+      };
+
+      jsonObj.push(colData);
     });
 
-    console.log(table.toString());
+    console.log(JSON.stringify(jsonObj));
   } catch (err) {
     console.log(err);
   }
@@ -75,11 +92,11 @@ console.time('scrape time');
 // https://github.com/chenxiaochun/blog/issues/38
 async function autoScroll(page) {
   await page.evaluate(async () => {
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       let totalHeight = 0;
       const distance = 800;
       const timer = setInterval(() => {
-        const scrollHeight = document.body.scrollHeight;
+        const { scrollHeight } = document.body;
         window.scrollBy(0, distance);
         totalHeight += distance;
 
@@ -90,4 +107,23 @@ async function autoScroll(page) {
       }, 100);
     });
   });
+}
+
+function formatUrl(url) {
+  if (argv.p !== undefined) {
+    url = `${url}&page=${argv.p}`;
+  }
+  if (argv.sc !== undefined) {
+    url = `${url}&sc=${argv.sc}`;
+  }
+  if (argv.ob !== undefined) {
+    url = `${url}&ob=${argv.ob}`;
+  }
+  return url;
+}
+
+function unformatMoney(money) {
+  money = money.split(' ').pop();
+  money = money.split('.');
+  return Number(money.join(''));
 }
