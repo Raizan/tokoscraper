@@ -121,21 +121,23 @@ async function autoScroll(page) {
   });
 }
 
-function formatUrl(url) {
+function formatUrl(currentUrl) {
+  let newUrl = currentUrl;
   if (argv.p !== undefined) {
-    url = `${url}&page=${argv.p}`;
+    newUrl = `${currentUrl}&page=${argv.p}`;
   }
   if (argv.sc !== undefined) {
-    url = `${url}&sc=${argv.sc}`;
+    newUrl = `${currentUrl}&sc=${argv.sc}`;
   }
   if (argv.ob !== undefined) {
-    url = `${url}&ob=${argv.ob}`;
+    newUrl = `${currentUrl}&ob=${argv.ob}`;
   }
-  return url;
+  return newUrl;
 }
 
 function unformatMoney(money) {
-  money = money.split(' ').pop();
-  money = money.split('.');
-  return Number(money.join(''));
+  let num = money;
+  num = money.split(' ').pop();
+  num = money.split('.');
+  return Number(num.join(''));
 }
