@@ -24,6 +24,12 @@ console.time('scrape time');
 
     url = page.url();
     if (url.indexOf('/p/') !== -1) {
+      if (url.split('/').length === 5) {
+        console.log('Error: Vague keyword');
+        browser.close();
+        process.exit(-1);
+      }
+
       const newUrl = formatUrl(url);
       await page.goto(newUrl);
     }
@@ -86,8 +92,7 @@ console.time('scrape time');
       jsonObj.products.push(colData);
     });
 
-    // console.log(JSON.stringify(jsonObj));
-    require('fs').writeFileSync('test.json', JSON.stringify(jsonObj, null, 4));
+    console.log(JSON.stringify(jsonObj));
   } catch (err) {
     console.log(err);
   }
