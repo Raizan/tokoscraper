@@ -34,7 +34,13 @@ console.time('scrape time');
 
     const pageContent = await page.content();
 
-    const jsonObj = [];
+    const jsonObj = {
+      products: [],
+      filters: {},
+      sortBy: {},
+      suggestion: [],
+    };
+
     const $ = cheerio.load(pageContent);
     const productGrid = $(vars.tp.grid);
     productGrid.each((i, col) => {
@@ -77,10 +83,11 @@ console.time('scrape time');
         reviewStars,
       };
 
-      jsonObj.push(colData);
+      jsonObj.products.push(colData);
     });
 
-    console.log(JSON.stringify(jsonObj));
+    // console.log(JSON.stringify(jsonObj));
+    require('fs').writeFileSync('test.json', JSON.stringify(jsonObj, null, 4));
   } catch (err) {
     console.log(err);
   }
