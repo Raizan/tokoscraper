@@ -4,8 +4,8 @@ const argv = require('minimist')(process.argv.slice(2));
 const vars = require('./vars.json');
 
 
-if (argv.keyword === undefined) {
-  console.log('Usage: node tokopedia.js --keyword <keyword> [-p page] [--sc filter] [--ob sort by]');
+if (argv.q === undefined) {
+  console.log('Usage: node tokopedia.js -q <keyword> [-p page] [--sc filter] [--ob sort by] [--cond condition]');
   process.exit(-1);
 }
 
@@ -150,6 +150,9 @@ function formatUrl(currentUrl) {
   }
   if (argv.ob !== undefined) {
     newUrl = `${currentUrl}&ob=${argv.ob}`;
+  }
+  if (argv.cond !== undefined) {
+    newUrl = `${currentUrl}&condition=${argv.cond}`;
   }
   return newUrl;
 }
