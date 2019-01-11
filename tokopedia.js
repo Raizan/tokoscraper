@@ -48,6 +48,13 @@ console.time('scrape time');
     };
 
     const $ = cheerio.load(pageContent);
+
+    if ($('#promo-not-found').length === 1) {
+      console.log('Error: No result');
+      browser.close();
+      process.exit(-1);
+    }
+
     const productGrid = $(vars.tp.grid);
     jsonObj.products = getProducts($, productGrid);
 
