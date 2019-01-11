@@ -12,7 +12,6 @@ if (argv.q === undefined) {
 let url = `https://www.tokopedia.com/search?st=product&q=${argv.q.split(' ').join('%20')}`;
 url = formatUrl(url);
 
-console.time('scrape time');
 (async () => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: vars.browserWSEndpoint,
@@ -67,7 +66,6 @@ console.time('scrape time');
     console.log(err);
   }
   await browser.close();
-  console.timeEnd('scrape time');
 })();
 
 function getProducts($, productGrid) {
@@ -177,7 +175,7 @@ function formatUrl(currentUrl) {
 
 function unformatMoney(money) {
   let num = money;
-  num = money.split(' ').pop();
-  num = money.split('.');
+  num = num.split(' ').pop();
+  num = num.split('.');
   return Number(num.join(''));
 }
