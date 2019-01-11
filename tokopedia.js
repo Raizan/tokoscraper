@@ -49,48 +49,10 @@ console.time('scrape time');
 
     const $ = cheerio.load(pageContent);
     const productGrid = $(vars.tp.grid);
-    productGrid.each((i, col) => {
-      const productName = $(vars.tp.productName, col).text();
+    jsonObj.products = getProducts($, productGrid);
 
-      let productPrice = $(vars.tp.productPrice, col).children().text();
-      productPrice = unformatMoney(productPrice);
-
-      const productLink = $('a', col).attr('href');
-      const productImage = $('img', col).attr('src');
-      const shopName = $(vars.tp.shopName, col).text();
-      const shopLocation = $(vars.tp.shopLocation, col).text();
-
-      let reviewCount = $(vars.tp.reviewCount, col).text().slice(1, -1);
-      reviewCount = Number(reviewCount);
-
-      let reviewStars;
-      if ($('i', col).is(vars.tp.review5)) {
-        reviewStars = 5;
-      } else if ($('i', col).is(vars.tp.review4)) {
-        reviewStars = 4;
-      } else if ($('i', col).is(vars.tp.review3)) {
-        reviewStars = 3;
-      } else if ($('i', col).is(vars.tp.review2)) {
-        reviewStars = 2;
-      } else if ($('i', col).is(vars.tp.review1)) {
-        reviewStars = 1;
-      } else {
-        reviewStars = null;
-      }
-
-      const colData = {
-        productName,
-        productPrice,
-        productLink,
-        productImage,
-        shopName,
-        shopLocation,
-        reviewCount,
-        reviewStars,
-      };
-
-      jsonObj.products.push(colData);
-    });
+    const searchFilters = $(vars.tp.filters);
+    jsonObj.filters = getFilters(searchFilters);
 
     console.log(JSON.stringify(jsonObj));
   } catch (err) {
@@ -99,6 +61,63 @@ console.time('scrape time');
   await browser.close();
   console.timeEnd('scrape time');
 })();
+
+function getProducts($, productGrid) {
+  const products = [];
+  productGrid.each((i, col) => {
+    const productName = $(vars.tp.productName, col).text();
+
+    let productPrice = $(vars.tp.productPrice, col).children().text();
+    productPrice = unformatMoney(productPrice);
+
+    const productLink = $('a', col).attr('href');
+    const productImage = $('img', col).attr('src');
+    const shopName = $(vars.tp.shopName, col).text();
+    const shopLocation = $(vars.tp.shopLocation, col).text();
+
+    let reviewCount = $(vars.tp.reviewCount, col).text().slice(1, -1);
+    reviewCount = Number(reviewCount);
+
+    let reviewStars;
+    if ($('i', col).is(vars.tp.review5)) {
+      reviewStars = 5;
+    } else if ($('i', col).is(vars.tp.review4)) {
+      reviewStars = 4;
+    } else if ($('i', col).is(vars.tp.review3)) {
+      reviewStars = 3;
+    } else if ($('i', col).is(vars.tp.review2)) {
+      reviewStars = 2;
+    } else if ($('i', col).is(vars.tp.review1)) {
+      reviewStars = 1;
+    } else {
+      reviewStars = null;
+    }
+
+    const colData = {
+      productName,
+      productPrice,
+      productLink,
+      productImage,
+      shopName,
+      shopLocation,
+      reviewCount,
+      reviewStars,
+    };
+
+    products.push(colData);
+  });
+  return products;
+}
+
+function getFilters(searchFilters) {
+  const filters = {};
+  searchFilters.each((i, filter) => {
+    const categoryName = filter.children[0].data;
+    const sc = filter.children[1].attribs.value;
+    filters[`${categoryName}`] = sc;
+  });
+  return filters;
+}
 
 // Credit to chenxiaochun
 // https://github.com/chenxiaochun/blog/issues/38
