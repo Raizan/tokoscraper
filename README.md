@@ -29,6 +29,6 @@ $ npm install
 ### Usage
 ```sh
 # Tokopedia
-$ node tokopedia.js --keyword <keyword> [-p page] [--sc filter] [--ob sort by]
+$ node tokopedia.js -q <keyword> [-p page] [--sc filter] [--ob sort by] [--cond condition]
 # Output: JSON string
 ```

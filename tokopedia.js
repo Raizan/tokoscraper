@@ -9,8 +9,7 @@ if (argv.q === undefined) {
   process.exit(-1);
 }
 
-let url = `https://www.tokopedia.com/search?st=product&q=${argv.keyword}`;
-
+let url = `https://www.tokopedia.com/search?st=product&q=${argv.q.split(' ').join('%20')}`;
 url = formatUrl(url);
 
 console.time('scrape time');
@@ -40,13 +39,6 @@ console.time('scrape time');
 
     const pageContent = await page.content();
 
-    const jsonObj = {
-      products: [],
-      filters: {},
-      sortBy: {},
-      suggestion: [],
-    };
-
     const $ = cheerio.load(pageContent);
 
     if ($('#promo-not-found').length === 1) {
@@ -55,11 +47,20 @@ console.time('scrape time');
       process.exit(-1);
     }
 
+    const jsonObj = {
+      products: [],
+      filters: {},
+      sortBy: {},
+    };
+
     const productGrid = $(vars.tp.grid);
     jsonObj.products = getProducts($, productGrid);
 
     const searchFilters = $(vars.tp.filters);
     jsonObj.filters = getFilters(searchFilters);
+
+    const searchSortBy = $('[name=ob]');
+    jsonObj.sortBy = getSortBy(searchSortBy);
 
     console.log(JSON.stringify(jsonObj));
   } catch (err) {
@@ -121,9 +122,19 @@ function getFilters(searchFilters) {
   searchFilters.each((i, filter) => {
     const categoryName = filter.children[0].data;
     const sc = filter.children[1].attribs.value;
-    filters[`${categoryName}`] = sc;
+    filters[`${categoryName}`] = Number(sc);
   });
   return filters;
+}
+
+function getSortBy(searchSortBy) {
+  const options = {};
+  searchSortBy.children('option').each((i, ob) => {
+    const option = ob.children[0].data;
+    const { value } = ob.attribs;
+    options[`${option}`] = Number(value);
+  });
+  return options;
 }
 
 // Credit to chenxiaochun
