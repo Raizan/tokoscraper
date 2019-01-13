@@ -17,8 +17,8 @@
   },
   "homepage": "https://github.com/Raizan/tokoscrapper#readme",
   "dependencies": {
+    "bluebird": "^3.5.3",
     "cheerio": "^1.0.0-rc.2",
-    "minimist": "^1.2.0",
     "puppeteer": "^1.11.0"
   },
   "devDependencies": {
